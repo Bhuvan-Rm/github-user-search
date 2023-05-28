@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>GitHub Repository Search</title>
+</head>
+
+<body>
+    <h1>GitHub Repository Search</h1>
+
+    <form id="search-form">
+        <input type="text" id="search-input" placeholder="Enter search keywords">
+        <input type="text" id="language-input" placeholder="Enter programming language">
+        <select id="sort-by">
+            <option value="forks">Forks</option>
+            <option value="size">Size</option>
+            <option value="stars">Stars</option>
+        </select>
+        <select id="order-by">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+        <button type="submit">Search</button>
+    </form>
+
+    <div id="search-results"></div>
+
+    <script>
+        const searchForm = document.getElementById('search-form');
+        const searchInput = document.getElementById('search-input');
+        const languageInput = document.getElementById('language-input');
+        const searchResults = document.getElementById('search-results');
+        const sortBy = document.getElementById('sort-by');
+        const orderBy = document.getElementById('order-by');
+
+        searchForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const searchQuery = searchInput.value.trim();
+            const languageQuery = languageInput.value.trim();
+            const sortByQuery = sortBy.value.trim();
+            const orderByQuery = orderBy.value.trim();
+
+
+            // Perform search only if at least one search option is provided
+            const baseUrl = 'https://api.github.com/search/repositories';
+            const queryParams = {
+                q: searchQuery,
+                language : languageQuery,
+                sort : sortByQuery,
+                order : orderByQuery
+            };
+
+
+            // Remove empty query parameters
+            Object.keys(queryParams).forEach(key => {
+                if (!queryParams[key]) {
+                    delete queryParams[key];
+                }
+            });
+
+            // Construct the query string
+            const queryString = Object.entries(queryParams)
+                .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+                .join('&');
+
+            /*
+            encodeURIComponent() is used to ensure that the key and value are properly encoded for use in a URL. 
+            For example, ["q", "javascript framework"] becomes "q=javascript%20framework".
+            */
+
+            // Create the API request URL
+            const apiUrl = `${baseUrl}?${queryString}`;
+            console.log(apiUrl)
+
+            // Make the API request
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // Clear previous search results
+                    searchResults.innerHTML = '';
+
+                    // Extract the repository items from the response
+                    const repositories = data.items;
+
+                     // Iterate over each repository
+                    repositories.forEach(repository => {
+                    const { name, languages_url } = repository;
+                    const repositoryElement = document.createElement('div');
+                    repositoryElement.innerHTML = `<a href="${repository.html_url}" target="_blank">${repository.full_name}</a>`;
+                   
+
+                    // Make a separate API call to retrieve the languages for each repository
+                    fetch(languages_url)
+                        .then(response => response.json())
+                        .then(languagesData => {
+                        // Extract the language keys from the languages data
+                        const languages = Object.keys(languagesData);
+                        repositoryElement.innerHTML +=  `<div class="languages">${languages.join(' | ')}</div>`;
+                        // Log the repository name and the languages used
+                        console.log(`${name}: ${languages.join(' | ')}`);
+                        });
+                    });
+
+                    searchResults.appendChild(repositoryElement);
+                    // Display the search results
+                    data.items.forEach(repository => {
+                        
+                    });
+                })
+                .catch(error => console.log(error));
+        }
+
+        
+    );
+    
+    </script>
+</body>
+
+</html>
